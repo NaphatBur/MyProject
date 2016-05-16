@@ -16,6 +16,8 @@ import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 
+import com.gordonwong.materialsheetfab.MaterialSheetFab;
+import com.gordonwong.materialsheetfab.MaterialSheetFabEventListener;
 import com.squareup.picasso.Picasso;
 
 import org.json.JSONArray;
@@ -23,10 +25,10 @@ import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.util.ArrayList;
-import java.util.List;
-import java.util.zip.Inflater;
 
-import mehdi.sakout.fancybuttons.FancyButton;
+import AsyncTask.AsyncTaskCategory;
+import AsyncTask.AsyncTaskFood;
+import MainActivity.Adapter.FabMenu;
 
 public class Order extends AppCompatActivity {
     //Category
@@ -47,13 +49,12 @@ public class Order extends AppCompatActivity {
 
     ViewPager pager;
     TabLayout tabLayout;
-    private CategoryPageAdapter pagerAdapter;
 
     Context context;
 
     LinearLayout[] cateLayout = new LinearLayout[15];
     TextView[] txtCateName = new TextView[15];
-    ImageView[] imgBtn = new ImageView[15];
+    ImageView[] imgCateBtn = new ImageView[15];
     ImageView[] ImageView = new ImageView[15];
 
     @Override
@@ -65,84 +66,91 @@ public class Order extends AppCompatActivity {
         //hide activity name in toolbar
         //getSupportActionBar().setDisplayShowTitleEnabled(false);
         context = this;
+        setUpToolbar();
+        getCateFromService();
+        setFabMenu();
 
+
+        layout_cate = (LinearLayout) findViewById(R.id.layout_cate);
+        layout_food= (LinearLayout) findViewById(R.id.layout_food);
+        pager = (ViewPager) findViewById(R.id.view_pager);
+    }
+
+    private void setUpToolbar(){
         Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
-
         TextView tbTableNo = (TextView) toolbar.findViewById(R.id.tlb_tableNum);
 
         SharedPreferences settings = getSharedPreferences(Table.TABLE_NO, Context.MODE_PRIVATE );
         final String table = settings.getString("table", Table.TABLE_NO);
+
         tbTableNo.setText("Table Number: "+table);
+    }
 
-        layout_cate = (LinearLayout) findViewById(R.id.layout_cate);
-        layout_food= (LinearLayout) findViewById(R.id.layout_food);
-
+    private void getCateFromService(){
         AsyncTaskCategory asyncTaskCategory = new AsyncTaskCategory
                 (new AsyncTaskCategory.OnGetCategoryCompleted() {
-            @Override
-            public void onGetCategoryCompleted(final String sCategory) {
-                Log.d("c_category In", sCategory);
-
-                try {
-                    JSONObject jsonObject = new JSONObject(sCategory);
-                    JSONObject jObject = jsonObject.getJSONObject("category");
-                    JSONArray jArrayCateName = jObject.getJSONArray("categoryName");
-                    JSONArray jArrayCatePic = jObject.getJSONArray("catePicturePath");
-                    JSONArray jArrayCateId = jObject.getJSONArray("categoryId");
-
-                    int countCate = jArrayCateName.length();
-                    int countCatePic = jArrayCatePic.length();
-                    Log.d("check count cate", String.valueOf(countCate + "/" + countCatePic));
-
-                    for(int i=0; i<countCate; i++){
-                        cateName.add(i, jArrayCateName.getString(i));
-                        catePicUrl.add(i, jArrayCatePic.getString(i));
-                        cateId.add(i, jArrayCateId.getString(i));
-                    }
-
-                } catch (JSONException e) {
-                    e.printStackTrace();
-                }
-
-                runOnUiThread(new Runnable() {
                     @Override
-                    public void run() {
-                        setBtnCate(cateName, catePicUrl, cateId);
+                    public void onGetCategoryCompleted(final String sCategory) {
+                        Log.d("c_category In", sCategory);
+
+                        try {
+                            JSONObject jsonObject = new JSONObject(sCategory);
+                            JSONObject jObject = jsonObject.getJSONObject("category");
+                            JSONArray jArrayCateName = jObject.getJSONArray("categoryName");
+                            JSONArray jArrayCatePic = jObject.getJSONArray("catePicturePath");
+                            JSONArray jArrayCateId = jObject.getJSONArray("categoryId");
+
+                            int countCate = jArrayCateName.length();
+                            int countCatePic = jArrayCatePic.length();
+                            Log.d("check count cate", String.valueOf(countCate +"/" +countCatePic));
+
+                            for(int i=0; i<countCate; i++){
+                                cateName.add(i, jArrayCateName.getString(i));
+                                catePicUrl.add(i, jArrayCatePic.getString(i));
+                                cateId.add(i, jArrayCateId.getString(i));
+                            }
+
+                        } catch (JSONException e) {
+                            e.printStackTrace();
+                        }
+
+                        runOnUiThread(new Runnable() {
+                            @Override
+                            public void run() {
+                                setBtnCate(cateName, catePicUrl, cateId);
+
+                            }
+                        });
 
                     }
                 });
+        asyncTaskCategory.execute();
+    }
 
+    private void setFabMenu(){
+        FabMenu fabMenu = (FabMenu) findViewById(R.id.fab);
+        View sheetView = findViewById(R.id.fab_sheet);
+        View overlay = findViewById(R.id.overlay);
+        int sheetColor = getResources().getColor(R.color.white);
+        int fabColor = getResources().getColor(R.color.monsoon);
+
+        final MaterialSheetFab materialSheetFab = new MaterialSheetFab<>(
+                fabMenu,
+                sheetView,
+                overlay,
+                sheetColor,
+                fabColor);
+        materialSheetFab.setEventListener(new MaterialSheetFabEventListener() {
+            @Override
+            public void onShowSheet() {
+                materialSheetFab.showFab();
             }
         });
-        asyncTaskCategory.execute();
-
-        pager = (ViewPager) findViewById(R.id.view_pager);
-
-
-
-
     }
 
-    public void createFoodLayout(String cateId){
-        LinearLayout layoutFood = new LinearLayout(context);
-        LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(
-                LinearLayout.LayoutParams.MATCH_PARENT,
-                LinearLayout.LayoutParams.MATCH_PARENT);
-
-        LinearLayout.LayoutParams lp02 = new LinearLayout.LayoutParams(
-                LinearLayout.LayoutParams.WRAP_CONTENT,
-                LinearLayout.LayoutParams.WRAP_CONTENT);
-
-        TextView textView = new TextView(context);
-        textView.setLayoutParams(lp02);
-        textView.setText(cateId);
-
-        layoutFood.addView(textView);
-    }
-
-
-    public void setBtnCate(ArrayList<String> cateName, ArrayList<String> catePicUrl,
+    //ทำปุ่มให้มัน รองรับตอนลบจากหลังร้าน
+    private void setBtnCate(ArrayList<String> cateName, ArrayList<String> catePicUrl,
                            ArrayList<String> cateId){
         ArrayList<String> cName = new ArrayList<String>();
         ArrayList<String> cPic = new ArrayList<String>();
@@ -169,42 +177,20 @@ public class Order extends AppCompatActivity {
             txtCateName[i].setGravity(Gravity.CENTER);
             txtCateName[i].setText(cName.get(i));
 
-            imgBtn[i] = new ImageView(context);
-            imgBtn[i].setLayoutParams(lp);
+            imgCateBtn[i] = new ImageView(context);
+            imgCateBtn[i].setLayoutParams(lp);
             Picasso.with(context)
                     .load(cPic.get(i))
                     .resize(100, 100)
                     .transform(new CircleTransform())
-                    .into(imgBtn[i]);
+                    .into(imgCateBtn[i]);
 
-            cateLayout[i].addView(imgBtn[i]);
+            cateLayout[i].addView(imgCateBtn[i]);
             cateLayout[i].addView(txtCateName[i]);
             layout_cate.addView(cateLayout[i]);
 
-            imgBtn[i].setOnTouchListener(new CateBtnClicked02(i, cateId.get(i)));
+            imgCateBtn[i].setOnTouchListener(new CateBtnClicked02(i, cateId.get(i)));
         }
-    }
-
-    public void addLayoutFood(int btnId, ArrayList<String> foodName, ArrayList<String> foodPrice,
-                              ArrayList<String> foodPic){
-        layoutF.add(0,R.layout.category_layout01);
-        layoutF.add(1,R.layout.category_layout02);
-        layoutF.add(2,R.layout.category_layout03);
-        layoutF.add(3,R.layout.category_layout04);
-        layoutF.add(4,R.layout.category_layout05);
-        layoutF.add(5,R.layout.category_layout06);
-        layoutF.add(6,R.layout.category_layout07);
-        layoutF.add(7,R.layout.category_layout08);
-        layoutF.add(8,R.layout.category_layout09);
-        layoutF.add(9,R.layout.category_layout10);
-
-        pagerAdapter = new CategoryPageAdapter(context, btnId, layoutF, foodName, foodPrice, foodPic);
-        pager.setAdapter(pagerAdapter);
-        pager.setClipToPadding(false);
-        pager.setPageMargin(12);
-        //หาร หาจำนวนหน้า จาก food แล้วเอามาใส่ตรงนี้
-        pager.setOffscreenPageLimit(3);
-
     }
 
 
@@ -217,16 +203,26 @@ public class Order extends AppCompatActivity {
             categoryId = cateId;
         }
 
-
         @Override
         public boolean onTouch(View v, MotionEvent event) {
             if (event.getAction() == MotionEvent.ACTION_DOWN) {
-                imgBtn[btnId].setColorFilter(getResources().getColor(R.color.iron));
+                imgCateBtn[btnId].setColorFilter(getResources().getColor(R.color.iron));
                 //txtCateName[btnId].setTextColor(getResources().getColor(R.color.blueTwitter));
                 Log.d("cate position", String.valueOf(btnId)+ "/" +categoryId);
 
-                AsyncTaskFood asyncTaskFood = new AsyncTaskFood(
-                        new AsyncTaskFood.OnGetFoodCompleted() {
+                getFoodFromService(btnId, categoryId);
+
+            } else if (event.getAction() == MotionEvent.ACTION_UP) {
+                imgCateBtn[btnId].clearColorFilter();
+            }
+
+            return true;
+        }
+    }
+
+    private void getFoodFromService(final int btnId, String categoryId){
+        AsyncTaskFood asyncTaskFood = new AsyncTaskFood(
+                new AsyncTaskFood.OnGetFoodCompleted() {
                     @Override
                     public void onGetFoodCompleted(String sFood) {
 
@@ -261,14 +257,15 @@ public class Order extends AppCompatActivity {
                                 }
                             }
 
-
-
                             Log.d("Check food count", String.valueOf(foodName.size()));
+
+
 
                             runOnUiThread(new Runnable() {
                                 @Override
                                 public void run() {
-                                    addLayoutFood(btnId, foodName, foodPrice, foodPic);
+                                    //addLayoutFood(btnId, foodName, foodPrice, foodPic);
+
                                 }
                             });
 
@@ -278,20 +275,43 @@ public class Order extends AppCompatActivity {
                     }
                 });
 
-                asyncTaskFood.execute(categoryId);
+        asyncTaskFood.execute(categoryId);
+    }
 
+    private void setLayoutFood(ImageView imgFood){
+        LinearLayout layoutFood = new LinearLayout(context);
+        LinearLayout.LayoutParams lpFood = new LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                LinearLayout.LayoutParams.MATCH_PARENT);
 
+        layoutFood.setLayoutParams(lpFood);
+        layoutFood.setOrientation(LinearLayout.HORIZONTAL);
+        layoutFood.addView(imgFood);
+        layout_food.addView(layoutFood);
+    }
 
-            } else if (event.getAction() == MotionEvent.ACTION_UP) {
-                imgBtn[btnId].clearColorFilter();
-                /*foodName.clear();
-                foodLocalName.clear();
-                foodPic.clear();
-                foodPrice.clear();*/
-            }
+    private void setFoodImage(ArrayList<String> foodPic){
+        ImageView[] imgFoodBtn = new ImageView[foodPic.size()];
 
-            return true;
+        for (int i=0; i<foodPic.size(); i++) {
+            Picasso.with(context)
+                    .load(foodPic.get(i))
+                    .resize(200, 100)
+                    .into(imgFoodBtn[i]);
         }
+
+
+    }
+
+    private void addLayoutFood(int btnId, ArrayList<String> foodName, ArrayList<String> foodPrice,
+                              ArrayList<String> foodPic){
+
+        /*pagerAdapter = new CategoryPageAdapter(context, btnId, layoutF, foodName, foodPrice, foodPic);
+        pager.setAdapter(pagerAdapter);
+        pager.setClipToPadding(false);
+        pager.setPageMargin(12);
+        //หาร หาจำนวนหน้า จาก food แล้วเอามาใส่ตรงนี้
+        pager.setOffscreenPageLimit(3);*/
     }
 
 

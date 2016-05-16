@@ -9,12 +9,13 @@ import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
 import android.view.View;
 import android.view.WindowManager;
-import android.widget.Button;
 import android.widget.EditText;
 import android.widget.Toast;
 
 import org.json.JSONException;
 import org.json.JSONObject;
+
+import AsyncTask.AsyncTaskLogin;
 
 
 public class Login extends AppCompatActivity {
@@ -47,7 +48,11 @@ public class Login extends AppCompatActivity {
                 username = edtUsername.getText().toString().trim();
                 password = edtPassword.getText().toString().trim();
 
-                login();
+                if(uName != null) {
+                    login();
+                }else{
+                    login();
+                }
 
                 AsyncTaskLogin asyncTaskLogin = new AsyncTaskLogin(
                         new AsyncTaskLogin.OnSetUserCompleted() {
